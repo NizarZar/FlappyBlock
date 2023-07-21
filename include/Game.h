@@ -12,12 +12,14 @@
 
 
 #define BLOCKS_MOVEMENT 5.f
-#define BLOCKS_SPAWN_FREQUENCY 0.4f
+#define BLOCKS_SPAWN_FREQUENCY 0.6f
 
 // Textures
 #define BLOCK_TOP_SPRITE "Textures/blocks-sprite.png"
 #define BLOCK_BOTTOM_SPRITE "Textures/blocks-sprite-bottom.png"
 #define WORLD_BACKGROUND "Textures/background.png"
+#define GROUND_TEXTURE "Textures/land.png"
+
 
 class Game {
 
@@ -33,8 +35,8 @@ private:
 	bool gameEnd;
 	unsigned int points;
 	sf::Clock clock;
-
 	int blockSpawnYOffset;
+	int landHeight;
 
 
 	// Resources
@@ -45,6 +47,7 @@ private:
 	// Game Objects
 	sf::RectangleShape player;
 	std::vector<sf::Sprite> blocks;
+	std::vector<sf::Sprite> lands;
 
 
 	// methods
@@ -57,6 +60,12 @@ private:
 	sf::Sprite blocksSpriteTop;
 	sf::Texture blocksTextureBottom;
 	sf::Sprite blocksSpriteBottom;
+	sf::Texture landTexture;
+	sf::Sprite landSprite;
+	sf::Texture secondLandTexture;
+	sf::Sprite secondLandSprite;
+	sf::Texture backgroundTexture;
+	sf::Sprite backgroundSprite;
 
 
 public:
@@ -71,7 +80,10 @@ public:
 	void RandomizeBlockOffset();
 	void spawnBottomBlocks();
 	void spawnTopBlocks();
+	void spawnInvisibleBlocks();
+	void spawnInfiniteLand();
 	void moveBlocks();
+	void moveLand();
 	void pollEvents();
 	void update();
 	void updatePlayer();

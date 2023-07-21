@@ -11,6 +11,7 @@ Game::~Game() {
 	delete this->window;
 }
 
+
 void Game::initVariables() {
 	this->window = nullptr;
 	this->spaceHeld = false;
@@ -19,6 +20,12 @@ void Game::initVariables() {
 	this->points = 0;
 	this->blockSpawnYOffset = 0;
 	this->font.loadFromFile("Fonts/ARLRDBD.TTF");
+
+	// Loading sprite and textures
+	//if (!this->backgroundTexture.loadFromFile(WORLD_BACKGROUND)) {
+		//std::cout << "Error loading texture" << std::endl;
+	//}
+	this->backgroundSprite.setTexture(this->backgroundTexture);
 
 	if (!this->blocksTextureTop.loadFromFile(BLOCK_TOP_SPRITE)) {
 		std::cout << "Error on loading texture" << std::endl;
@@ -29,28 +36,44 @@ void Game::initVariables() {
 	}
 	this->blocksSpriteBottom.setTexture(this->blocksTextureBottom);
 
+	if (!this->landTexture.loadFromFile(GROUND_TEXTURE)) {
+		std::cout << "Error on loading texture" << std::endl;
+	}
+	this->landSprite.setTexture(this->landTexture);
+
+	if (!this->secondLandTexture.loadFromFile(GROUND_TEXTURE)) {
+		std::cout << "Error on loading texture" << std::endl;
+	}
+	this->secondLandSprite.setTexture(this->secondLandTexture);
+
+	this->landSprite.setScale(1.f, 0.7f);
+	this->secondLandSprite.setScale(1.f, 0.7f);
+
+	this->landHeight = this->landTexture.getSize().y;
+
 	this->UI.setFont(this->font);
 	this->UI.setCharacterSize(14);
 	this->UI.setFillColor(sf::Color::White);
 	this->UI.setString("NULL");
+
 }
 
 void Game::initWindow() {
-	this->videoMode.height = 720;
-	this->videoMode.width = 1280;
+	this->videoMode.height = 600;
+	this->videoMode.width = 800;
 
 	this->window = new sf::RenderWindow(this->videoMode, "Flappy Block", sf::Style::Titlebar | sf::Style::Close);
 	this->window->setFramerateLimit(60);
 }
 
 void Game::initPlayer() {
+	// set player block
 	this->player.setFillColor(sf::Color::Yellow);
 	this->player.setPosition(150.f, 150.f);
 	this->player.setOutlineThickness(0.01f);
 	this->player.setSize(sf::Vector2f(25.f, 25.f));
 	this->player.setScale(sf::Vector2f(1.f, 1.f));
 }
-
 
 const bool Game::gameRunning() const {
 	return this->window->isOpen();
@@ -72,18 +95,8 @@ void Game::pollEvents() {
 		}
 	}
 }
-
-void Game::spawnBottomBlocks() {
-	this->blocksSpriteBottom.setPosition(this->window->getSize().x, this->window->getSize().y - this->blocksSpriteBottom.getLocalBounds().height - blockSpawnYOffset);
-	blocks.push_back(this->blocksSpriteBottom);
-}
-
-void Game::spawnTopBlocks() {
-	this->blocksSpriteTop.setPosition(this->window->getSize().x, -blockSpawnYOffset);
-	blocks.push_back(this->blocksSpriteTop);
-}
-
 void Game::moveBlocks() {
+	// movement of pipe blocks
 	for (unsigned short int i = 0; i < blocks.size(); i++) 
 	{
 		if (blocks.at(i).getPosition().x < 0 - blocks.at(i).getGlobalBounds().width) 
@@ -96,13 +109,50 @@ void Game::moveBlocks() {
 		}
 	}
 }
+void Game::moveLand() {
+	// move the land (infinitely)
+	for (unsigned short int i = 0; i < this->lands.size(); i++) {
+		float movement = BLOCKS_MOVEMENT;
+		this->lands.at(i).move(-movement, 0.f);
+		if (this->lands.at(i).getPosition().x < 0 - lands.at(i).getGlobalBounds().width) {
+			sf::Vector2f position(this->window->getSize().x, this->lands.at(i).getPosition().x);
+			this->lands.at(i).setPosition(position);
+		}
+	}
+}
+
+void Game::spawnInfiniteLand() {
+	// set the spawn of the land
+	this->landSprite.setPosition(0, this->window->getSize().y - this->landSprite.getGlobalBounds().height);
+	this->secondLandSprite.setPosition(this->landSprite.getGlobalBounds().width, this->window->getSize().y - this->landSprite.getGlobalBounds().height);
+	this->lands.push_back(this->landSprite);
+	this->lands.push_back(this->secondLandSprite);
+}
+
 void Game::RandomizeBlockOffset() {
-	blockSpawnYOffset = rand() % (450);
+	// randomize the offset of pipe blocks
+	blockSpawnYOffset = rand() % (this->landHeight+1);
+}
+
+void Game::spawnBottomBlocks() {
+	this->blocksSpriteBottom.setPosition(this->window->getSize().x, this->window->getSize().y - this->blocksSpriteBottom.getLocalBounds().height - blockSpawnYOffset);
+	blocks.push_back(this->blocksSpriteBottom);
+}
+
+void Game::spawnTopBlocks() {
+	this->blocksSpriteTop.setPosition(this->window->getSize().x, -blockSpawnYOffset);
+	blocks.push_back(this->blocksSpriteTop);
+}
+
+void Game::spawnInvisibleBlocks() {
+	this->blocksSpriteBottom.setPosition(this->window->getSize().x, 0.f);
+	this->blocksSpriteBottom.setColor(sf::Color(0, 0, 0, 0));
+	blocks.push_back(this->blocksSpriteBottom);
 }
 
 void Game::updatePlayer() {
-	this->player.move(1.f, 1.f);
 
+	this->player.move(0.5f, 1.f);
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
 		if (!this->spaceHeld) {
 			this->spaceHeld = true;
@@ -120,12 +170,13 @@ void Game::update() {
 	this->pollEvents();
 	if (!this->gameEnd) {
 		this->updatePlayer();
+		this->spawnInfiniteLand();
+		this->moveLand();
 		this->moveBlocks();
 		if (this->clock.getElapsedTime().asSeconds() > BLOCKS_SPAWN_FREQUENCY) {
-
 			this->RandomizeBlockOffset();
-			this->spawnBottomBlocks();
 			this->spawnTopBlocks();
+			//this->spawnBottomBlocks();
 			clock.restart();
 		}
 	}
@@ -137,7 +188,6 @@ void Game::update() {
 	if (this->collided) {
 		gameEnd = true;
 	}
-
 }
 
 void Game::render() {
@@ -147,6 +197,10 @@ void Game::render() {
 	for (unsigned short int i = 0; i < blocks.size(); i++) {
 		this->window->draw(blocks.at(i));
 	}
+	for (unsigned short int i = 0; i < lands.size();i++) {
+		this->window->draw(lands.at(i));
+	}
+	//this->window->draw(this->backgroundSprite);
 	this->window->draw(this->UI);
 
 	this->window->display();
