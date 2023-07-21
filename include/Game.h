@@ -14,6 +14,10 @@
 #define BLOCKS_MOVEMENT 5.f
 #define BLOCKS_SPAWN_FREQUENCY 0.6f
 
+// WINDOW
+#define SCREEN_WIDTH 768
+#define SCREEN_HEIGHT 1024
+
 // Textures
 #define BLOCK_TOP_SPRITE "Textures/blocks-sprite.png"
 #define BLOCK_BOTTOM_SPRITE "Textures/blocks-sprite-bottom.png"

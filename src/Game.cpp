@@ -59,8 +59,8 @@ void Game::initVariables() {
 }
 
 void Game::initWindow() {
-	this->videoMode.height = 600;
-	this->videoMode.width = 800;
+	this->videoMode.height = SCREEN_HEIGHT;
+	this->videoMode.width = SCREEN_WIDTH;
 
 	this->window = new sf::RenderWindow(this->videoMode, "Flappy Block", sf::Style::Titlebar | sf::Style::Close);
 	this->window->setFramerateLimit(60);
@@ -95,20 +95,7 @@ void Game::pollEvents() {
 		}
 	}
 }
-void Game::moveBlocks() {
-	// movement of pipe blocks
-	for (unsigned short int i = 0; i < blocks.size(); i++) 
-	{
-		if (blocks.at(i).getPosition().x < 0 - blocks.at(i).getGlobalBounds().width) 
-		{
-			blocks.erase(blocks.begin() + i);
-		}
-		else {
-			float movement = BLOCKS_MOVEMENT;
-			blocks.at(i).move(-movement, 0.f);
-		}
-	}
-}
+
 void Game::moveLand() {
 	// move the land (infinitely)
 	for (unsigned short int i = 0; i < this->lands.size(); i++) {
@@ -135,19 +122,34 @@ void Game::RandomizeBlockOffset() {
 }
 
 void Game::spawnBottomBlocks() {
-	this->blocksSpriteBottom.setPosition(this->window->getSize().x, this->window->getSize().y - this->blocksSpriteBottom.getLocalBounds().height - blockSpawnYOffset);
+	this->blocksSpriteBottom.setPosition(this->window->getSize().x, this->window->getSize().y - this->blocksSpriteBottom.getGlobalBounds().height - this->blockSpawnYOffset);
 	blocks.push_back(this->blocksSpriteBottom);
 }
 
 void Game::spawnTopBlocks() {
-	this->blocksSpriteTop.setPosition(this->window->getSize().x, -blockSpawnYOffset);
+	this->blocksSpriteTop.setPosition(this->window->getSize().x, -this->blockSpawnYOffset);
 	blocks.push_back(this->blocksSpriteTop);
 }
 
 void Game::spawnInvisibleBlocks() {
-	this->blocksSpriteBottom.setPosition(this->window->getSize().x, 0.f);
+	this->blocksSpriteBottom.setPosition(this->window->getSize().x, this->window->getSize().y - this->blocksSpriteBottom.getGlobalBounds().height);
 	this->blocksSpriteBottom.setColor(sf::Color(0, 0, 0, 0));
 	blocks.push_back(this->blocksSpriteBottom);
+}
+
+void Game::moveBlocks() {
+	// movement of pipe blocks
+	for (unsigned short int i = 0; i < this->blocks.size(); i++)
+	{
+		if (blocks.at(i).getPosition().x < 0 - this->blocks.at(i).getGlobalBounds().width)
+		{
+			this->blocks.erase(this->blocks.begin() + i);
+		}
+		else {
+			float movement = BLOCKS_MOVEMENT;
+			this->blocks.at(i).move(-movement, 0.f);
+		}
+	}
 }
 
 void Game::updatePlayer() {
@@ -176,7 +178,7 @@ void Game::update() {
 		if (this->clock.getElapsedTime().asSeconds() > BLOCKS_SPAWN_FREQUENCY) {
 			this->RandomizeBlockOffset();
 			this->spawnTopBlocks();
-			//this->spawnBottomBlocks();
+			this->spawnBottomBlocks();
 			clock.restart();
 		}
 	}
@@ -203,6 +205,7 @@ void Game::render() {
 	//this->window->draw(this->backgroundSprite);
 	this->window->draw(this->UI);
 
+	// display window and render all objects
 	this->window->display();
 
 }
