@@ -84,7 +84,6 @@ public:
 	void RandomizeBlockOffset();
 	void spawnBottomBlocks();
 	void spawnTopBlocks();
-	void spawnInvisibleBlocks();
 	void spawnInfiniteLand();
 	void moveBlocks();
 	void moveLand();

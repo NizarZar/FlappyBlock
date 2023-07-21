@@ -46,9 +46,6 @@ void Game::initVariables() {
 	}
 	this->secondLandSprite.setTexture(this->secondLandTexture);
 
-	this->landSprite.setScale(1.f, 0.7f);
-	this->secondLandSprite.setScale(1.f, 0.7f);
-
 	this->landHeight = this->landTexture.getSize().y;
 
 	this->UI.setFont(this->font);
@@ -122,7 +119,7 @@ void Game::RandomizeBlockOffset() {
 }
 
 void Game::spawnBottomBlocks() {
-	this->blocksSpriteBottom.setPosition(this->window->getSize().x, this->window->getSize().y - this->blocksSpriteBottom.getGlobalBounds().height - this->blockSpawnYOffset);
+	this->blocksSpriteBottom.setPosition(this->window->getSize().x, this->window->getSize().y - this->blocksSpriteBottom.getGlobalBounds().height - (this->blockSpawnYOffset));
 	blocks.push_back(this->blocksSpriteBottom);
 }
 
@@ -131,11 +128,6 @@ void Game::spawnTopBlocks() {
 	blocks.push_back(this->blocksSpriteTop);
 }
 
-void Game::spawnInvisibleBlocks() {
-	this->blocksSpriteBottom.setPosition(this->window->getSize().x, this->window->getSize().y - this->blocksSpriteBottom.getGlobalBounds().height);
-	this->blocksSpriteBottom.setColor(sf::Color(0, 0, 0, 0));
-	blocks.push_back(this->blocksSpriteBottom);
-}
 
 void Game::moveBlocks() {
 	// movement of pipe blocks
