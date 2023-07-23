@@ -36,12 +36,12 @@ void Game::initVariables() {
 	}
 	this->blocksSpriteBottom.setTexture(this->blocksTextureBottom);
 
-	if (!this->landTexture.loadFromFile(GROUND_TEXTURE)) {
+	if (!this->landTexture.loadFromFile(GROUND_SPRITE)) {
 		std::cout << "Error on loading texture" << std::endl;
 	}
 	this->landSprite.setTexture(this->landTexture);
 
-	if (!this->secondLandTexture.loadFromFile(GROUND_TEXTURE)) {
+	if (!this->secondLandTexture.loadFromFile(GROUND_SPRITE)) {
 		std::cout << "Error on loading texture" << std::endl;
 	}
 	this->secondLandSprite.setTexture(this->secondLandTexture);
@@ -52,7 +52,7 @@ void Game::initVariables() {
 	this->UI.setCharacterSize(14);
 	this->UI.setFillColor(sf::Color::White);
 	this->UI.setString("NULL");
-
+	this->gameState = GameStates::readyState;
 }
 
 void Game::initWindow() {
@@ -64,12 +64,12 @@ void Game::initWindow() {
 }
 
 void Game::initPlayer() {
-	// set player block
+	this->playerState = BLOCK_STATE_STILL;
 	this->player.setFillColor(sf::Color::Yellow);
 	this->player.setPosition(150.f, 150.f);
 	this->player.setOutlineThickness(0.01f);
 	this->player.setSize(sf::Vector2f(25.f, 25.f));
-	this->player.setScale(sf::Vector2f(1.f, 1.f));
+	this->player.setPosition((this->window->getSize().x / 4) - (this->player.getGlobalBounds().width / 2), (this->window->getSize().y / 2) - (this->player.getGlobalBounds().height / 2));
 }
 
 const bool Game::gameRunning() const {
@@ -89,14 +89,14 @@ void Game::pollEvents() {
 		case sf::Event::KeyPressed:
 			if (this->event.key.code == sf::Keyboard::Escape) this->window->close();
 			break;
-		}
+		} 
 	}
 }
 
 void Game::moveLand() {
 	// move the land (infinitely)
 	for (unsigned short int i = 0; i < this->lands.size(); i++) {
-		float movement = BLOCKS_MOVEMENT;
+		float movement = LAND_MOVEMENT;
 		this->lands.at(i).move(-movement, 0.f);
 		if (this->lands.at(i).getPosition().x < 0 - lands.at(i).getGlobalBounds().width) {
 			sf::Vector2f position(this->window->getSize().x, this->lands.at(i).getPosition().x);
@@ -128,7 +128,6 @@ void Game::spawnTopBlocks() {
 	blocks.push_back(this->blocksSpriteTop);
 }
 
-
 void Game::moveBlocks() {
 	// movement of pipe blocks
 	for (unsigned short int i = 0; i < this->blocks.size(); i++)
@@ -138,40 +137,82 @@ void Game::moveBlocks() {
 			this->blocks.erase(this->blocks.begin() + i);
 		}
 		else {
-			float movement = BLOCKS_MOVEMENT;
+			float movement = LAND_MOVEMENT;
 			this->blocks.at(i).move(-movement, 0.f);
 		}
 	}
 }
 
-void Game::updatePlayer() {
+const std::vector<sf::Sprite> &Game::GetLandSprite() const {
+	return this->lands;
+}
 
-	this->player.move(0.5f, 1.f);
+void Game::updatePlayer() {
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
 		if (!this->spaceHeld) {
-			this->spaceHeld = true;
-			this->player.move(1.5f, -25.0f);
-			this->points++;
-			std::cout << "Space pressed" << std::endl;
+			if (this->gameState != GameStates::gameOverState) {
+				this->spaceHeld = true;
+				this->jumpPlayer();
+				this->gameState = GameStates::playingState;
+				this->points++;
+				std::cout << "Space pressed" << std::endl;
+			}
 		}
 	}
 	else {
 		this->spaceHeld = false;
 	}
+	if (this->playerState == BLOCK_STATE_FALLING) {
+		this->player.move(0, GRAVITY * dt);
+	}
+	else if (playerState == BLOCK_STATE_JUMPING) {
+		this->player.move(0, ( - JUMP_SPEED * dt));
+	}
+
+	if (this->movementClock.getElapsedTime().asSeconds() > JUMP_DURATION) {
+		this->playerState = BLOCK_STATE_FALLING;
+		this->movementClock.restart();
+	}
+
+}
+void Game::jumpPlayer() {
+	this->movementClock.restart();
+	this->playerState = BLOCK_STATE_JUMPING;
 }
 
 void Game::update() {
 	this->pollEvents();
+	if (this->gameState == GameStates::gameOverState) {
+		std::cout << "Game is over!" << std::endl;
+		gameEnd = true;
+	}
 	if (!this->gameEnd) {
 		this->updatePlayer();
 		this->spawnInfiniteLand();
-		this->moveLand();
-		this->moveBlocks();
-		if (this->clock.getElapsedTime().asSeconds() > BLOCKS_SPAWN_FREQUENCY) {
-			this->RandomizeBlockOffset();
-			this->spawnTopBlocks();
-			this->spawnBottomBlocks();
-			clock.restart();
+		if (this->gameState != GameStates::gameOverState) {
+			this->moveLand();
+		}
+		if (this->gameState == GameStates::playingState) {
+			this->moveBlocks();
+			if (this->clock.getElapsedTime().asSeconds() > BLOCKS_SPAWN_FREQUENCY) {
+				this->RandomizeBlockOffset();
+				this->spawnTopBlocks();
+				this->spawnBottomBlocks();
+				clock.restart();
+			}
+			for (sf::Sprite landSprite : this->lands) {
+				if (collision.checkSpriteCollision(this->player, landSprite)) {
+					this->gameState = GameStates::gameOverState;
+					std::cout << "Game is over!" << std::endl;
+					collided = true;
+				}
+			}
+			for (sf::Sprite blockPipeSprite : this->blocks) {
+				if (collision.checkSpriteCollision(this->player, 0.7f, blockPipeSprite, 1.f)) {
+					this->gameState = GameStates::gameOverState;
+					collided = true;
+				}
+			}
 		}
 	}
 
@@ -196,6 +237,7 @@ void Game::render() {
 	}
 	//this->window->draw(this->backgroundSprite);
 	this->window->draw(this->UI);
+
 
 	// display window and render all objects
 	this->window->display();
